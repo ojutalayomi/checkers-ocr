@@ -1,0 +1,17 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# PyInstaller Build Artifacts
+build/
+*.spec
+
+dist/
+dn/
+dn1/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+/2026-05-22 4.08.46 PM.jpg
