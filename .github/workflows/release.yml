@@ -40,7 +40,7 @@ jobs:
 
       - name: Compile Script to Standalone Binary
         run: |
-          pyinstaller --onefile --name="${{ matrix.artifact_name }}" ${{ matrix.pyinstaller_args }} app.py
+          pyinstaller --onefile --name="${{ matrix.artifact_name }}" ${{ matrix.pyinstaller_args }} __init__.py
 
       - name: Upload Binary to Workflow Run
         uses: actions/upload-artifact@v4
