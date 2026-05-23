@@ -1,0 +1,77 @@
+name: Build and Package Cross-Platform Binaries
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers the workflows automatically whenever you push a version tag (e.g., v1.0.0)
+
+permissions:
+  contents: write # Grants GitHub Actions permission to upload artifacts to your Releases page
+
+jobs:
+  build:
+    name: Build Asset on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            artifact_name: DeliveryNoteScanner-macOS
+            pyinstaller_args: --hidden-import="Cocoa" --hidden-import="Vision" --hidden-import="Foundation"
+          - os: windows-latest
+            artifact_name: DeliveryNoteScanner-Windows.exe
+            pyinstaller_args: --hidden-import="winrt.windows.media.ocr" --hidden-import="winrt.windows.graphics.imaging" --hidden-import="winrt.windows.storage.streams"
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # Automatically caches packages to speed up future runs
+
+      - name: Install System Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Compile Script to Standalone Binary
+        run: |
+          pyinstaller --onefile --name="${{ matrix.artifact_name }}" ${{ matrix.pyinstaller_args }} app.py
+
+      - name: Upload Binary to Workflow Run
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}*
+
+  release:
+    name: Create GitHub Release and Attach Assets
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Download Compiled Binaries from Prior Step
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist-artifacts
+
+      - name: Consolidate Binaries for Upload
+        run: |
+          mkdir -p ./release-assets
+          # Flatten out the artifact download directories
+          find ./dist-artifacts -type f -exec cp {} ./release-assets/ \;
+          ls -l ./release-assets/
+
+      - name: Publish Official GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./release-assets/*
+          generate_release_notes: true # Automatically summarizes your commit history into release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Built-in encrypted credential managed by GitHub
