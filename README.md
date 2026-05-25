@@ -92,7 +92,7 @@ Your compiled standalone application will be waiting inside the local `dist/` di
 ## 🤖 Automated CI/CD Deployment (GitHub Actions)
 
 This repository includes a completely automated deployment system. You do not need to compile things manually to hand them to non-technical users.
-
+ 
 Whenever you push a version tag to your repository, a GitHub runner matrix spins up parallel virtual machine instances, processes the compilation configurations, creates a brand new **GitHub Release**, and builds/uploads the assets cleanly.
 
 To fire the automated pipeline release engine:

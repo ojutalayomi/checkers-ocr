@@ -20,7 +20,7 @@ jobs:
             pyinstaller_args: --hidden-import="Cocoa" --hidden-import="Vision" --hidden-import="Foundation"
           - os: windows-latest
             artifact_name: DeliveryNoteScanner-Windows.exe
-            pyinstaller_args: --hidden-import="winrt.windows.media.ocr" --hidden-import="winrt.windows.graphics.imaging" --hidden-import="winrt.windows.storage.streams"
+            pyinstaller_args: --hidden-import="PIL" --hidden-import="winrt.windows.media.ocr" --hidden-import="winrt.windows.graphics.imaging" --hidden-import="winrt.windows.storage.streams"
 
     steps:
       - name: Checkout Code Repository
@@ -41,6 +41,22 @@ jobs:
       - name: Compile Script to Standalone Binary
         run: |
           pyinstaller --onefile --name="${{ matrix.artifact_name }}" ${{ matrix.pyinstaller_args }} __init__.py
+
+      - name: Sanity Test Binary (macOS headless)
+        if: matrix.os == 'macos-latest'
+        run: |
+          chmod +x dist/${{ matrix.artifact_name }}
+          # TEXTUAL=press:q forces Textual to boot, simulate 'q', and exit instantly.
+          # We use a mock screen configuration via defaults to let Cocoa initialize headlessly.
+          TEXTUAL=press:q ./dist/${{ matrix.artifact_name }}
+
+      - name: Sanity Test Binary (Windows headless)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # If 'PIL' or 'winrt' are missing, this step throws an exception and halts the CI pipeline.
+          $env:TEXTUAL="press:q"
+          .\dist\${{ matrix.artifact_name }}
 
       - name: Upload Binary to Workflow Run
         uses: actions/upload-artifact@v4
